@@ -1,0 +1,15 @@
+# environment / secrets
+.venv/
+.env
+__pycache__/
+*.pyc
+.DS_Store
+
+# fetched by setup.sh (upstream repos + weights)
+CatVTON/
+DM-VTON/
+models/
+
+# runtime data: try-on results, camera captures, wardrobe uploads — never commit
+outputs/
+clothes/

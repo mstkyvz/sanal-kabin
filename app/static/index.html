@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sanal Kabin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Sanal Kabin</h1>
+  <span id="engine-status" class="pill">Model yükleniyor…</span>
+</header>
+
+<main>
+  <section class="stage">
+   <div class="viewers">
+    <div class="viewer">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="canvas"></canvas>
+      <div id="countdown" hidden></div>
+      <div id="cam-off" class="placeholder">
+        <p>Kamerayı aç, kıyafet seç, hareket et; seçtiğin kıyafet canlı olarak üstünde görünür.<br>
+        Gerçekçi sonuç için <b>Dene</b>'ye bas.</p>
+        <button id="btn-cam" class="primary">Kamerayı aç</button>
+        <label class="link">ya da fotoğraf yükle <input type="file" id="person-file" accept="image/*" hidden></label>
+      </div>
+      <div id="pose-hint" class="hint" hidden></div>
+    </div>
+    <div id="live-panel" class="live-panel" hidden>
+      <img id="live-img" alt="">
+      <div id="live-wait" class="placeholder">Canlı giydirme hazırlanıyor…</div>
+      <span id="live-stat" class="hint"></span>
+    </div>
+   </div>
+
+    <div class="controls">
+      <div class="row">
+        <button id="btn-try" class="primary big" disabled>Dene ✨</button>
+        <label class="check"><input type="checkbox" id="use-timer" checked> 3 sn geri sayım</label>
+        <label>Canlı mod
+          <select id="live-mode" disabled>
+            <option value="kapali">Kapalı</option>
+            <option value="hizli">Hızlı · ~20 fps (DM-VTON, sadece üst)</option>
+            <option value="kaliteli">Kaliteli · ~4 sn/kare (CatVTON)</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Kalite
+          <select id="preset">
+            <option value="hizli">Hızlı · 384×512 (~18 sn)</option>
+            <option value="dengeli" selected>Dengeli · 576×768 (~70 sn)</option>
+            <option value="kalite">En iyi · 768×1024 (~5 dk)</option>
+          </select>
+        </label>
+        <label>Canlı önizleme
+          <input type="range" id="overlay-opacity" min="0" max="100" value="100">
+        </label>
+        <label>Boyut
+          <input type="range" id="overlay-size" min="70" max="140" value="100">
+        </label>
+        <label class="check"><input type="checkbox" id="show-skeleton"> İskelet</label>
+        <label class="check" title="Son 'Dene' sonucundaki kıyafeti canlı olarak üstüne giydirir"><input type="checkbox" id="worn-mode" disabled> Gerçekçi önizleme</label>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <h2>Gardırop</h2>
+    <div id="wardrobe" class="grid"></div>
+    <form id="upload-form" class="upload">
+      <label class="drop">
+        <input type="file" id="cloth-file" accept="image/*" hidden>
+        <span>+ Kıyafet ekle (ürün fotoğrafı)</span>
+      </label>
+      <select id="cloth-type-new">
+        <option value="upper">Üst</option>
+        <option value="lower">Alt</option>
+        <option value="overall">Elbise / tüm</option>
+      </select>
+    </form>
+
+    <h2>Sonuçlar</h2>
+    <div id="results"></div>
+  </aside>
+</main>
+
+<div id="lightbox" hidden><img alt=""></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

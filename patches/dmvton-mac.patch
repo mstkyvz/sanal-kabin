@@ -1,0 +1,39 @@
+diff --git a/models/warp_modules/afwm.py b/models/warp_modules/afwm.py
+index 02f0cca..68e8c6f 100644
+--- a/models/warp_modules/afwm.py
++++ b/models/warp_modules/afwm.py
+@@ -91,7 +91,7 @@ class AFlowNet(nn.Module):
+             weight_array[:, :, 0, 2] = filter_diag1
+             weight_array[:, :, 0, 3] = filter_diag2
+ 
+-            weight_array = torch.cuda.FloatTensor(weight_array).permute(3, 2, 0, 1)
++            weight_array = torch.tensor(weight_array, dtype=torch.float32).permute(3, 2, 0, 1)
+             self.weight = nn.Parameter(data=weight_array, requires_grad=False)
+ 
+             for i in range(len(x_warps)):
+diff --git a/models/warp_modules/mobile_afwm.py b/models/warp_modules/mobile_afwm.py
+index feb69cd..3b41017 100644
+--- a/models/warp_modules/mobile_afwm.py
++++ b/models/warp_modules/mobile_afwm.py
+@@ -91,7 +91,7 @@ class AFlowNet(nn.Module):
+             weight_array[:, :, 0, 2] = filter_diag1
+             weight_array[:, :, 0, 3] = filter_diag2
+ 
+-            weight_array = torch.cuda.FloatTensor(weight_array).permute(3, 2, 0, 1)
++            weight_array = torch.tensor(weight_array, dtype=torch.float32).permute(3, 2, 0, 1)
+             self.weight = nn.Parameter(data=weight_array, requires_grad=False)
+ 
+             for i in range(len(x_warps)):
+diff --git a/models/warp_modules/style_afwm.py b/models/warp_modules/style_afwm.py
+index 631544d..e5d8f5f 100644
+--- a/models/warp_modules/style_afwm.py
++++ b/models/warp_modules/style_afwm.py
+@@ -415,7 +415,7 @@ class AFlowNet(nn.Module):
+             weight_array[:, :, 0, 2] = filter_diag1
+             weight_array[:, :, 0, 3] = filter_diag2
+ 
+-            weight_array = torch.cuda.FloatTensor(weight_array).permute(3, 2, 0, 1)
++            weight_array = torch.tensor(weight_array, dtype=torch.float32).permute(3, 2, 0, 1)
+             self.weight = nn.Parameter(data=weight_array, requires_grad=False)
+ 
+             # import ipdb; ipdb.set_trace()

@@ -1,0 +1,100 @@
+diff --git a/model/DensePose/__init__.py b/model/DensePose/__init__.py
+index 91d21d3..d27bd3a 100644
+--- a/model/DensePose/__init__.py
++++ b/model/DensePose/__init__.py
+@@ -48,6 +48,7 @@ class DensePose:
+         cfg.merge_from_file(self.config_path)
+         cfg.merge_from_list(opts)
+         cfg.MODEL.WEIGHTS = self.model_path
++        cfg.MODEL.DEVICE = str(self.device)
+         cfg.freeze()
+         return cfg
+ 
+diff --git a/model/attn_processor.py b/model/attn_processor.py
+index 7e79f32..b7ba154 100644
+--- a/model/attn_processor.py
++++ b/model/attn_processor.py
+@@ -2,6 +2,29 @@ from torch.nn import functional as F
+ import torch
+ # from flash_attn import flash_attn_func
+ 
++
++# MPS has no memory-efficient attention kernel, so the full (q x k) score matrix is
++# materialized; at 768x1024 with concatenated condition this is ~18 GB. Split the work
++# per batch item and along the query axis to bound peak memory.
++MAX_SCORE_ELEMENTS = 2 ** 28
++
++
++def chunked_sdpa(query, key, value, attention_mask=None):
++    if query.device.type == "cuda":
++        return F.scaled_dot_product_attention(query, key, value, attn_mask=attention_mask)
++    b, h, q_len, _ = query.shape
++    k_len = key.shape[-2]
++    if h * q_len * k_len <= MAX_SCORE_ELEMENTS:
++        return F.scaled_dot_product_attention(query, key, value, attn_mask=attention_mask)
++    chunk = max(1, MAX_SCORE_ELEMENTS // (h * k_len))
++    out = torch.empty_like(query)
++    for i in range(b):
++        for s in range(0, q_len, chunk):
++            m = None if attention_mask is None else attention_mask[i:i + 1, :, s:s + chunk]
++            out[i:i + 1, :, s:s + chunk] = F.scaled_dot_product_attention(
++                query[i:i + 1, :, s:s + chunk], key[i:i + 1], value[i:i + 1], attn_mask=m)
++    return out
++
+ class SkipAttnProcessor(torch.nn.Module):
+     def __init__(self, *args, **kwargs) -> None:
+         super().__init__()
+@@ -86,9 +109,7 @@ class AttnProcessor2_0(torch.nn.Module):
+         # the output of sdp = (batch, num_heads, seq_len, head_dim)
+         # TODO: add support for attn.scale when we move to Torch 2.1
+         
+-        hidden_states = F.scaled_dot_product_attention(
+-            query, key, value, attn_mask=attention_mask, dropout_p=0.0, is_causal=False
+-        )
++        hidden_states = chunked_sdpa(query, key, value, attention_mask)
+         # hidden_states = flash_attn_func(
+         #     query, key, value, dropout_p=0.0, causal=False
+         # )
+diff --git a/model/cloth_masker.py b/model/cloth_masker.py
+index 6746cdb..0bb8af5 100644
+--- a/model/cloth_masker.py
++++ b/model/cloth_masker.py
+@@ -160,7 +160,8 @@ class AutoMasker:
+         device='cuda'):
+         np.random.seed(0)
+         torch.manual_seed(0)
+-        torch.cuda.manual_seed(0)
++        if torch.cuda.is_available():
++            torch.cuda.manual_seed(0)
+         
+         self.densepose_processor = DensePose(densepose_ckpt, device)
+         self.schp_processor_atr = SCHP(ckpt_path=os.path.join(schp_ckpt, 'exp-schp-201908301523-atr.pth'), device=device)
+diff --git a/model/pipeline.py b/model/pipeline.py
+index fa5da27..e73d608 100644
+--- a/model/pipeline.py
++++ b/model/pipeline.py
+@@ -31,13 +31,14 @@ class CatVTONPipeline:
+         compile=False,
+         skip_safety_check=False,
+         use_tf32=True,
++        vae_path="stabilityai/sd-vae-ft-mse",
+     ):
+         self.device = device
+         self.weight_dtype = weight_dtype
+         self.skip_safety_check = skip_safety_check
+ 
+         self.noise_scheduler = DDIMScheduler.from_pretrained(base_ckpt, subfolder="scheduler")
+-        self.vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse").to(device, dtype=weight_dtype)
++        self.vae = AutoencoderKL.from_pretrained(vae_path).to(device, dtype=weight_dtype)
+         if not skip_safety_check:
+             self.feature_extractor = CLIPImageProcessor.from_pretrained(base_ckpt, subfolder="feature_extractor")
+             self.safety_checker = StableDiffusionSafetyChecker.from_pretrained(base_ckpt, subfolder="safety_checker").to(device, dtype=weight_dtype)
+@@ -51,7 +52,7 @@ class CatVTONPipeline:
+             self.vae = torch.compile(self.vae, mode="reduce-overhead")
+             
+         # Enable TF32 for faster training on Ampere GPUs (A100 and RTX 30 series).
+-        if use_tf32:
++        if use_tf32 and str(device).startswith("cuda"):
+             torch.set_float32_matmul_precision("high")
+             torch.backends.cuda.matmul.allow_tf32 = True
+ 

@@ -1,0 +1,26 @@
+# Versions used on the Mac test (M4 Pro). On Linux + NVIDIA, the default PyPI torch wheel includes CUDA.
+torch==2.14.1
+torchvision==0.29.1
+accelerate==1.15.0
+diffusers==0.39.0
+transformers==4.49.0
+peft==0.21.2
+huggingface-hub==0.36.2
+numpy==1.26.4
+opencv-python==4.11.0.86
+pillow==12.3.0
+pyyaml==6.0.3
+scipy==1.17.1
+scikit-image==0.26.0
+tqdm==4.70.1
+fvcore==0.1.5.post20221221
+cloudpickle==3.1.2
+omegaconf==2.3.1
+pycocotools==2.0.11
+matplotlib==3.11.2
+av==18.1.0
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+gdown==6.4.1
+thop==0.1.1.post2209072238
