@@ -54,6 +54,8 @@ class ProgressTqdm:
 catvton_pipeline.tqdm.tqdm = ProgressTqdm
 
 engine: TryOnEngine | None = None
+# MPS crashes (Metal assertion) when two threads use the GPU at once, so CatVTON and DM-VTON share this lock.
+gpu_lock = threading.Lock()
 
 
 LIVE = (384, 512, 4)  # width, height, LCM steps
@@ -101,16 +103,20 @@ def run_live(req):
 
 def worker():
     global engine
-    engine = TryOnEngine()
+    with gpu_lock:
+        engine = TryOnEngine()
     while True:
         with live["cond"]:
             while live["pending"] is None and job_queue.empty():
                 live["cond"].wait()
             req, live["pending"] = live["pending"], None
         if req is not None:  # live frames take priority over queued jobs
-            run_live(req)
+            with gpu_lock:
+                run_live(req)
         else:
-            run_job(job_queue.get())
+            jid = job_queue.get()
+            with gpu_lock:
+                run_job(jid)
 
 
 def enqueue_job(jid):
@@ -266,11 +272,13 @@ async def api_live(person: UploadFile = File(...), cloth_id: str = Form(...), cl
                     headers={"X-Elapsed": f"{req.get('elapsed', 0):.2f}"})
 
 
-fast = {"model": None, "lock": threading.Lock()}
+fast = {"model": None}
 
 
 def run_fast(person, cloth_id):
-    with fast["lock"]:
+    if not gpu_lock.acquire(blocking=False):  # don't queue frames behind a CatVTON job
+        raise HTTPException(503, "Motor meşgul, bekleniyor")
+    try:
         if fast["model"] is None:
             fast["model"] = DMVTON()
         m = fast["model"]
@@ -280,6 +288,8 @@ def run_fast(person, cloth_id):
         buf = io.BytesIO()
         out.save(buf, "JPEG", quality=85)
         return buf.getvalue(), time.time() - t
+    finally:
+        gpu_lock.release()
 
 
 @app.post("/api/live_fast")

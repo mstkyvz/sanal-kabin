@@ -6,10 +6,12 @@ cd "$(dirname "$0")"
 CATVTON_COMMIT=7818397f25613beedb3d861a34769f607cfcf3b1
 DMVTON_COMMIT=5dcd04ee3f5b1fb392df1184c887c1a7e910c72e
 
-fetch() { # repo dir commit patch
+fetch() { # repo dir commit patch — downloads only that commit (no history), then applies our patch
   if [ ! -d "$2" ]; then
-    git clone https://github.com/$1.git "$2"
-    git -C "$2" checkout -q "$3"
+    git init -q "$2"
+    git -C "$2" remote add origin "https://github.com/$1.git"
+    git -C "$2" fetch -q --depth 1 origin "$3"
+    git -C "$2" checkout -q FETCH_HEAD
     git -C "$2" apply "$PWD/$4"
   fi
 }

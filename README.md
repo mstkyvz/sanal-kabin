@@ -25,6 +25,23 @@ Kamerayı aç, kıyafet seç, hareket et. Kıyafet üstünde canlı olarak gör�
 ./start.sh    # http://localhost:7861  (PORT=xxxx ./start.sh ile değiştirilebilir)
 ```
 
+### İndirilen modeller (`scripts/download_models.py`)
+
+Repoda model yok, hepsi `./setup.sh` ile indirilir (toplam ~5 GB):
+
+| Model | Kaynak | Dosyalar | Boyut | Klasör |
+|---|---|---|---|---|
+| CatVTON attention (mix) | HF `zhengchong/CatVTON` | `mix-48k-1024/attention/model.safetensors` | 198 MB | `models/CatVTON/` |
+| DensePose R50-FPN | HF `zhengchong/CatVTON` | `DensePose/*` | 256 MB | `models/CatVTON/DensePose/` |
+| SCHP (ATR + LIP) | HF `zhengchong/CatVTON` | `SCHP/exp-schp-*.pth` | 2×267 MB | `models/CatVTON/SCHP/` |
+| SD 1.5 inpainting UNet | HF `booksforcharlie/stable-diffusion-inpainting` | `unet/`, `scheduler/` (.bin → safetensors'a çevrilir) | 3,4 GB | `models/sd-inpainting/` |
+| VAE | HF `stabilityai/sd-vae-ft-mse` | `*.safetensors` | 335 MB | `models/sd-vae-ft-mse/` |
+| LCM-LoRA | HF `latent-consistency/lcm-lora-sdv1-5` | `pytorch_lora_weights.safetensors` | 135 MB | `models/lcm-lora-sdv1-5/` |
+| DM-VTON (warp + gen) | [Google Drive](https://drive.google.com/drive/folders/1wfWGsR0vWC5LrA26xhj92ec_GoCKV80A) | `dmvton_pf_warp.pt`, `dmvton_pf_gen.pt` | 86 + 26 MB | `DM-VTON/checkpoints/` |
+| MediaPipe Pose (full) | Google | `pose_landmarker_full.task` | 9 MB | repoda: `app/static/vendor/` |
+
+Upstream kodlar: [CatVTON](https://github.com/Zheng-Chong/CatVTON) @ `7818397`, [DM-VTON](https://github.com/KiseKloset/DM-VTON) @ `5dcd04e`. İkisi de `setup.sh` ile bu commit'lerden indirilir ve `patches/` uygulanır.
+
 Gerekenler: Python 3.11, git, ~10 GB disk. Linux + NVIDIA'da PyPI'deki varsayılan `torch` CUDA destekli geliyor. Orada `VTON_MASK_DEVICE=cuda` varsayılan.
 
 ## Yapı
